@@ -1,0 +1,30 @@
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MainWindow.baml
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MainWindow.g.cs
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\App.g.cs
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime_MarkupCompile.cache
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.g.resources
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.Properties.Resources.resources
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.read.1.tlog
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.write.1.tlog
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\bin\Release\MicrosoftKinectVoiceGameFunTime.exe
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\bin\Release\MicrosoftKinectVoiceGameFunTime.pdb
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\bin\Release\Microsoft.Samples.Kinect.WpfViewers.dll
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\bin\Release\Microsoft.Samples.Kinect.WpfViewers.pdb
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.exe
+C:\Users\vost3550\AppData\Local\Temporary Projects\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.pdb
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.exe
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.pdb
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\MicrosoftKinectVoiceGameFunTime.exe
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\MicrosoftKinectVoiceGameFunTime.pdb
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\Microsoft.Samples.Kinect.WpfViewers.dll
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\Microsoft.Samples.Kinect.WpfViewers.pdb
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MainWindow.baml
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MainWindow.g.cs
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\App.g.cs
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime_MarkupCompile.cache
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.g.resources
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.Properties.Resources.resources
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.read.1.tlog
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.write.1.tlog

@@ -58,10 +58,13 @@ namespace KinectAudioDemo
         private Random rdm = new Random();
         private Stack<airplane> hangar = new Stack<airplane>();
         private airplane tempAirplane;
+        private airplane[] airspace = new airplane [3];
 
         public MainWindow()
         {
             InitializeComponent();
+            hangarFull(2);
+            airspace = fillAirspace(airspace, hangar);
 
             var colorList = new List<Color> { Colors.Black, Colors.Green };
             this.bitmapWave = new WriteableBitmap(WaveImageWidth, WaveImageHeight, 96, 96, PixelFormats.Indexed1, new BitmapPalette(colorList));
@@ -453,7 +456,7 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
 
             string status = "Recognized: " + e.Result.Text + " " + e.Result.Confidence;
             this.ReportSpeechStatus(status);
-            hangarFull();
+            hangarFull(2);
             transmissionEnd();
             
            // Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = brush; }), DispatcherPriority.Normal);
@@ -479,10 +482,10 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             }
         }
 
-        private void randomTailnum()
+        private string randomTailnum()
         {
             string tailnum = "N";
-            int remianingChars = rdm.Next(5);
+            int remianingChars = rdm.Next(2);
             int temp;
             for (int i = 0; i <= remianingChars; i++)
             {
@@ -497,23 +500,21 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
                     tailnum += Convert.ToString((Char)(temp + 65));
                 }
                 tailnum = tailnum.ToUpper();
-                tailNum.Content = tailnum;
             }
+            return tailnum;
         }
 
-        private void hangarFull()
+        private void hangarFull(int total)
         {
             if (hangar.Count == 0)//come back and fix to ensure that it's truly empty
             {
                 //let's add some airplanes!
-                while(hangar.Count < 5){
-                    //airplane plane = new airplane();
-                    hangar.Push(new airplane());
+                while (hangar.Count < total)
+                {
+                    hangar.Push(new airplane(randomTailnum()));
                 }
+
             }
-            else{
-                return;
-                }
         }
         private void checkPlayerAccuracy(string testTailNumber){
             if (testTailNumber == null)
@@ -572,13 +573,7 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             private string tailNumber;
             private float timer;
             private int size;
-            private Random rdm = new Random();
 
-            public airplane(){
-                tailNumber = randomTailnum();
-                timer = 25.00f;
-                size = 1;
-            }
             public airplane(string tailNumberGiven)
             {
                 tailNumber = tailNumberGiven;
@@ -589,33 +584,10 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             {
                 return tailNumber;
             }
-
-            private string randomTailnum()
-            {
-                string tailnum = "N";
-                int remianingChars = rdm.Next(1);//FIX WHEN DONE
-                int temp;
-                for (int i = 0; i <= remianingChars; i++)
-                {
-                    temp = rdm.Next(35);
-                    if (temp > 25)
-                    {
-                        temp -= 25;
-                        tailnum += Convert.ToString(temp);
-                    }
-                    else
-                    {
-                        tailnum += Convert.ToString((Char)(temp + 65));
-                    }
-                    tailnum = tailnum.ToUpper();
-                    //tailNum.Content = tailnum;
-                }
-                return tailnum;
-            }
         }
 
         public void initializeGame(){
-            hangarFull();
+            hangarFull(2);
             tempAirplane = hangar.Pop();
             tailNum.Content = tempAirplane.getTailNum();
         }
@@ -736,6 +708,27 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             public override void Write(byte[] buffer, int offset, int count)
             {
                 this.baseStream.Write(buffer, offset, count);
+            }
+        }
+
+        public airplane[] fillAirspace(airplane [] a, Stack<airplane> s)
+        {
+            for (int i = 0; i < s.Count; i++ )
+            {
+                if (a[i] == null)
+                {
+                    a[i] = (airplane) s.Pop();
+                }
+            }
+            return a;
+        }
+
+
+        //ARRAY OF LABELS 
+        public void planesToLabel(Label [] l, airplane [] a)
+        {
+            for (int i = 0;i<a.Length;i++) {
+                l[i].Content = a[i].getTailNum();
             }
         }
     }

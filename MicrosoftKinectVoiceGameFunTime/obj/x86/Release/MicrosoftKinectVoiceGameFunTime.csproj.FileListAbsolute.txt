@@ -28,3 +28,6 @@ C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\Micros
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\MicrosoftKinectVoiceGameFunTime.Properties.Resources.resources
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.read.1.tlog
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Release\GenerateResource.write.1.tlog
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\Coding4Fun.Kinect.Wpf.dll
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\Microsoft.Expression.Drawing.dll
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Release\Coding4Fun.Kinect.Wpf.pdb

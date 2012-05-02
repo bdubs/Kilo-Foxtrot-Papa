@@ -13,3 +13,6 @@ C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\Micros
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Debug\GenerateResource.write.1.tlog
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Debug\MicrosoftKinectVoiceGameFunTime.exe
 C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\obj\x86\Debug\MicrosoftKinectVoiceGameFunTime.pdb
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Debug\Coding4Fun.Kinect.Wpf.dll
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Debug\Microsoft.Expression.Drawing.dll
+C:\Users\vost3550\Documents\Visual Studio 2010\Projects\Kinect Voice Game\MicrosoftKinectVoiceGameFunTime\MicrosoftKinectVoiceGameFunTime\bin\Debug\Coding4Fun.Kinect.Wpf.pdb

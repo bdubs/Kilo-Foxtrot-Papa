@@ -22,9 +22,8 @@ namespace KinectAudioDemo
     using Microsoft.Speech.Recognition;
     using MicrosoftKinectVoiceGameFunTime;
     using Microsoft.Xna.Framework;
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
+    using Coding4Fun.Kinect.Wpf;
+
     public partial class MainWindow : Window
     {
 
@@ -47,7 +46,6 @@ namespace KinectAudioDemo
         private readonly Int32Rect fullImageRect = new Int32Rect(0, 0, WaveImageWidth, WaveImageHeight);
 
         private KinectSensor kinect;
-        //private double angle;
         private bool running = true;
         private DispatcherTimer readyTimer;
         private EnergyCalculatingPassThroughStream stream;
@@ -58,141 +56,47 @@ namespace KinectAudioDemo
         private bool transmissionDone = false;
         private Random rdm = new Random();
         private Stack<airplane> hangar = new Stack<airplane>();
-        private airplane tempAirplane;
+        //private airplane tempAirplane;
         private bool mistake = false;
-        int activeAirplanePosition = 0;
-
-        //runway stuff
-
-
+        //int activeAirplanePosition = 0;
         //Skeleton Stuff
-        bool closing = false;
+        //bool closing = false;
         const int skeletonCount = 6;
         Skeleton[] allSkeletons = new Skeleton[skeletonCount];
-
-        
-        
 
         //Set Airspace, Hangar, and Difficulty
         int difficulty = 0;
         int totalPlanesInAir = 3;
         Label[] planeLabels;
-
+        System.Windows.Shapes.Ellipse[] ellipseAry;
         airplane [] airspace;
+        int airspaceIndex = 0;
+        
+        //Runway objects
+        Runway runway1;
+        Runway runway2;
+        Runway runway3;
 
-        public MainWindow()
-        {
-            InitializeComponent();
-            
-            //planeLabels = new Label[totalPlanesInAir];
-            Label [] mplaneLabels = {planeLabel1, planeLabel2, planeLabel3};
-            planeLabels = mplaneLabels;
+        //Array of fuel tanks to update
+        ProgressBar[] fuelTankArray;
 
-            
 
-            hangar = fillHangar(totalPlanesInAir * 3, difficulty);
-            airspace = new airplane[totalPlanesInAir];
-            for (int i = 0; i < totalPlanesInAir; i++)
-            {
-                airspace[i] = null;
-            }
-            fillAirspace();
 
-            
-            
-
-            var colorList = new List<System.Windows.Media.Color> { Colors.Black, Colors.Green };
-            this.bitmapWave = new WriteableBitmap(WaveImageWidth, WaveImageHeight, 96, 96, PixelFormats.Indexed1, new BitmapPalette(colorList));
-
-            this.pixels = new byte[WaveImageWidth];
-            for (int i = 0; i < this.pixels.Length; i++)
-            {
-                this.pixels[i] = 0xff;
-            }
-
-            //imgWav.Source = this.bitmapWave;
-
-            SensorChooser.KinectSensorChanged += this.SensorChooserKinectSensorChanged;
-        }
-
-        private static RecognizerInfo GetKinectRecognizer()
-        {
-            Func<RecognizerInfo, bool> matchingFunc = r =>
-            {
-                string value;
-                r.AdditionalInfo.TryGetValue("Kinect", out value);
-                return "True".Equals(value, StringComparison.InvariantCultureIgnoreCase) && "en-US".Equals(r.Culture.Name, StringComparison.InvariantCultureIgnoreCase);
-            };
-            return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
-        }
-
-        private void SensorChooserKinectSensorChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            KinectSensor oldSensor = e.OldValue as KinectSensor;
-            if (oldSensor != null)
-            {
-                this.UninitializeKinect();
-            }
-
-            KinectSensor newSensor = e.NewValue as KinectSensor;
-            this.kinect = newSensor;
-
-            // Only enable this checkbox if we have a sensor
-           
-
-            if (newSensor != null)
-            {
-                this.InitializeKinect();
-            }
-        }
-
-        private void InitializeKinect()
-        {
-            var sensor = this.kinect;
-            this.speechRecognizer = this.CreateSpeechRecognizer();
-
-            var parameters = new TransformSmoothParameters
-            {
-                Smoothing = 0.3f,
-                Correction = 0.0f,
-                Prediction = 0.0f,
-                JitterRadius = 1.0f,
-                MaxDeviationRadius = 0.5f
-            };
-
-            try
-            {
-                sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
-                sensor.DepthStream.Enable();
-                sensor.SkeletonStream.Enable(parameters);
-                sensor.AllFramesReady += new EventHandler<AllFramesReadyEventArgs>(sensor_AllFramesReady);
-                sensor.Start();
-            }
-            catch (Exception)
-            {
-                SensorChooser.AppConflictOccurred();
-                return;
-            }
-            if (this.speechRecognizer != null && sensor != null)
-            {
-                // NOTE: Need to wait 4 seconds for device to be ready to stream audio right after initialization
-                this.readyTimer = new DispatcherTimer();
-                this.readyTimer.Tick += this.ReadyTimerTick;
-                this.readyTimer.Interval = new TimeSpan(0, 0, 4);
-                this.readyTimer.Start();
-
-                this.ReportSpeechStatus("Initializing audio stream...");
-                //this.UpdateInstructionsText(string.Empty);
-
-                this.Closing += this.MainWindowClosing;
-            }
-            initializeGame();
-            this.running = true;
-        }
+        /**********************************************************************************/
+        /****************** ALLFRAMESREADY, INITIALIZATION & MAIN WINDOW ******************/
+        /**********************************************************************************/
 
         void sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
- //************************ALL FRAMES READY
+
+            runway1.checkTime();
+            runway2.checkTime();
+            runway3.checkTime();
+            for (int i = 0; i < airspace.Length; i++)
+            {
+                airspace[i].consumeFuel();
+            }
+
             //throw new NotImplementedException();
             using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
             {
@@ -208,11 +112,11 @@ namespace KinectAudioDemo
                     //***copy data out into our byte array***
                     colorFrame.CopyPixelDataTo(pixels);
 
-                    
+
                     byte[] depthPixels = enableLanding(depthFrame, pixels);//after messing with depthdata
                     byte[] pixels2 = new byte[pixels.Length];//pixels after modifying the color image
 
-                    
+
 
                     int stride = colorFrame.Width * 4; //because RGB + alpha
 
@@ -220,7 +124,7 @@ namespace KinectAudioDemo
                     PixelFormats.Bgr32, null, depthPixels, stride);
                     ColorCameraImage.Source = BitmapSource.Create(colorFrame.Width, colorFrame.Height, 96, 96,
                     PixelFormats.Bgr32, null, pixels, stride);
-                    
+
                     // BitmapSource.Create();
                 }//end depth frame
             }//end color frame
@@ -231,54 +135,110 @@ namespace KinectAudioDemo
                 return;
             }
 
-            GetCameraPoint(first, e);
+            ScalePosition(rightLander, first.Joints[JointType.HandRight]);
+            //GetCameraPoint(first, e);
             
+
 
 
         }//end allFramesReady
 
-        void GetCameraPoint(Skeleton first, AllFramesReadyEventArgs e)
+        private void InitializeKinect()
         {
-            /*if (first == null)
+            var sensor = this.kinect;
+            this.speechRecognizer = this.CreateSpeechRecognizer();
+
+            var parameters = new TransformSmoothParameters
             {
-                return;
-            }*/
-
-            using (DepthImageFrame depth = e.OpenDepthImageFrame())
+                Smoothing = 0.3f,
+                Correction = 0.0f,
+                Prediction = 0.0f,
+                JitterRadius = 1.0f,
+                MaxDeviationRadius = 0.5f
+            };
+            try
             {
-                if (depth == null ||
-                    SensorChooser.Kinect == null)
-                {
-                    return;
-                }
-
-
-                //Map a joint location to a point on the depth map
-                
-                //left hand
-                /*DepthImagePoint leftDepthPoint =
-                    depth.MapFromSkeletonPoint(first.Joints[JointType.HandLeft].Position);*/
-                //right hand
-                DepthImagePoint rightDepthPoint =
-                    depth.MapFromSkeletonPoint(first.Joints[JointType.HandRight].Position);
-
-
-                //Map a depth point to a point on the color image
-               
-                //left hand
-                /*ColorImagePoint leftColorPoint =
-                    depth.MapToColorImagePoint(leftDepthPoint.X, leftDepthPoint.Y,
-                    ColorImageFormat.RgbResolution640x480Fps30);*/
-                //right hand
-                ColorImagePoint rightColorPoint =
-                    depth.MapToColorImagePoint(rightDepthPoint.X, rightDepthPoint.Y,
-                    ColorImageFormat.RgbResolution640x480Fps30);
-               
-
-                CameraPosition(rightLander, rightColorPoint);
+                sensor.ColorStream.Enable(ColorImageFormat.RgbResolution640x480Fps30);
+                sensor.DepthStream.Enable();
+                sensor.SkeletonStream.Enable(parameters);
+                sensor.AllFramesReady += new EventHandler<AllFramesReadyEventArgs>(sensor_AllFramesReady);
+                sensor.Start();
             }
+            catch (Exception)
+            {
+                SensorChooser.AppConflictOccurred();
+                return;
+            }
+            if (this.speechRecognizer != null && sensor != null)
+            {
+                //This example of the readyTimer may help us with landing planes
+                // NOTE: Need to wait 4 seconds for device to be ready to stream audio right after initialization
+                this.readyTimer = new DispatcherTimer();
+                this.readyTimer.Tick += this.ReadyTimerTick;
+                this.readyTimer.Interval = new TimeSpan(0, 0, 4);
+                this.readyTimer.Start();
+                this.ReportSpeechStatus("Initializing audio stream...");
+                //this.UpdateInstructionsText(string.Empty);
+                this.Closing += this.MainWindowClosing;
+            }
+            initializeGame();
+            this.running = true;
+        }//end InitializeKinect
 
-        }
+        public void initializeGame()
+        {
+            
+            //This is where we populate the array planeLabels
+            Label[] mplaneLabels = { planeLabel1, planeLabel2, planeLabel3 };
+            planeLabels = mplaneLabels;
+            //This is where we populate the array of FuelTanks
+            ProgressBar[] mfuelTankArray = {fuelTank1, fuelTank2, fuelTank3};
+            fuelTankArray = mfuelTankArray;
+            //We fill the hangar with the initial amount of planes.  This is the total number of planes in the game
+            hangar = fillHangar(totalPlanesInAir * 3, difficulty);
+
+            //Now we fill airspace, it is the array of airplanes currently in the air
+            airspace = new airplane[totalPlanesInAir];
+            for (int i = 0; i < totalPlanesInAir; i++)
+            {
+                airspace[i] = null;
+            }
+            fillAirspace();
+
+            runway1 = new Runway(Canvas.GetLeft(runwayRect1), Canvas.GetTop(runwayRect1), runwayRect1.Width, runwayRect1.Height, 1, doNotEnter1);
+            runway2 = new Runway(Canvas.GetLeft(runwayRect2), Canvas.GetTop(runwayRect2), runwayRect2.Width, runwayRect2.Height, 2, doNotEnter2);
+            runway3 = new Runway(Canvas.GetLeft(runwayRect3), Canvas.GetTop(runwayRect3), runwayRect3.Width, runwayRect3.Height, 3, doNotEnter3);
+
+        }//end initalizeGame
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            var colorList = new List<System.Windows.Media.Color> { Colors.Black, Colors.Green };
+            this.bitmapWave = new WriteableBitmap(WaveImageWidth, WaveImageHeight, 96, 96, PixelFormats.Indexed1, new BitmapPalette(colorList));
+            this.pixels = new byte[WaveImageWidth];
+            for (int i = 0; i < this.pixels.Length; i++)
+            {
+                this.pixels[i] = 0xff;
+            }
+            SensorChooser.KinectSensorChanged += this.SensorChooserKinectSensorChanged;
+        }//end MainWindow
+
+        private void SensorChooserKinectSensorChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            KinectSensor oldSensor = e.OldValue as KinectSensor;
+            if (oldSensor != null)
+            {
+                this.UninitializeKinect();
+            }
+            KinectSensor newSensor = e.NewValue as KinectSensor;
+            this.kinect = newSensor;
+            if (newSensor != null)
+            {
+                this.InitializeKinect();
+            }
+        }//end SensorChooserKinectSensorChanged
+
         private void ReadyTimerTick(object sender, EventArgs e)
         {
             this.Start();
@@ -286,7 +246,7 @@ namespace KinectAudioDemo
           //  this.UpdateInstructionsText("Say: 'red', 'green' or 'blue'");
             this.readyTimer.Stop();
             this.readyTimer = null;
-        }
+        }//end ReadyTimerTick
 
         private void UninitializeKinect()
         {
@@ -305,12 +265,337 @@ namespace KinectAudioDemo
                 this.readyTimer.Stop();
                 this.readyTimer = null;
             }
-        }
+        }//end UninitializeKinect
 
         private void MainWindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             this.UninitializeKinect();
+        }//end MainWindowClosing
+
+        private void Start()
+        {
+            var audioSource = this.kinect.AudioSource;
+            audioSource.BeamAngleMode = BeamAngleMode.Adaptive;
+            var kinectStream = audioSource.Start();
+            this.stream = new EnergyCalculatingPassThroughStream(kinectStream);
+            this.speechRecognizer.SetInputToAudioStream(
+                this.stream, new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
+            this.speechRecognizer.RecognizeAsync(RecognizeMode.Multiple);
+
+        }//end Start
+
+
+
+        /**********************************************************************************/
+        /******************************** AIRPLANE RELATED ********************************/
+        /**********************************************************************************/
+
+        private Stack<airplane> fillHangar(int total, int difficulty)
+        {
+            //fillHangar is called at the beginning of a round to create airplanes for the user to interact with
+            Stack<airplane> hangar = new Stack<airplane>();
+            for (int i = 0; i < total; i++)
+            {
+                hangar.Push(new airplane(randomTailnum(4)));
+            }
+            return hangar;
+        }//end fillHangar
+
+        private void checkAllPlanes()
+        {
+            /*checkAllPlanes determines if a transmission matches a tailnumber 
+            of an airplane in the global variable airspace*/
+            for (int i = 0; i < airspace.Length; i++)
+            {
+                if (transmission.Equals(airspace[i].getTailNum()))
+                {
+                    capturedPlaneNumber.Content = airspace[i].getTailNum();
+                    lastUsed.Background = Brushes.Green;
+                    //airspace[i] = null;
+                    fillAirspace();
+                    if (airspaceIndex != -1)
+                    {
+                        highlightPlaneTag(false);
+                    }
+                    airspaceIndex = i;
+                    highlightPlaneTag(true);
+                    return;
+                    //TODO: add score
+                }
+            }
+            lastUsed.Background = Brushes.Red;
+            airspaceIndex = -1;
+        }//end checkAllPlanes
+
+        public void fillAirspace()
+        {
+        /*fillAirspace populates each element of airspace if it is null
+        airspace is global, and therefore does not need to be passed*/
+            if (hangar.Count != 0)
+            {
+                for (int i = 0; i < airspace.Length; i++)
+                {
+                    if (airspace[i] == null)
+                    {
+                        //TODO: add try/catch for pop statement (if cannot pop, do something)
+                        airspace[i] = hangar.Pop();
+                        airspace[i].fuel = fuelTankArray[i];
+                        planeLabels[i].Content = airspace[i].getTailNum();
+                    }
+                }
+            }
+        }//end fillAirspace
+
+        public void planesToLabel(Label[] l, airplane[] a)
+        {
+        //When called, this method updates the array of labels with the tailnumbers of an array of planes
+            for (int i = 0; i < a.Length; i++)
+            {
+                l[i].Content = a[i].getTailNum();
+            }
+        }//end planesToLabel
+
+        private string randomTailnum(int length)
+        {
+            //This method returns a randomized string to be used as a unique identifier for an airplane when it is constructed
+            string tailnum = "N";
+            int remianingChars = rdm.Next(length-1);
+            int temp;
+            for (int i = 0; i <= remianingChars; i++)
+            {
+                temp = rdm.Next(35);
+                if (temp > 25)
+                {
+                    temp -= 25;
+                    tailnum += Convert.ToString(temp);
+                }
+                else
+                {
+                    tailnum += Convert.ToString((Char)(temp + 65));
+                }
+                tailnum = tailnum.ToUpper();
+            }
+            return tailnum;
+        }//end randomTailnum
+
+        public byte[] enableLanding(DepthImageFrame depthFrame, byte[] colorImage)
+        {
+            //enableLanding is a method that determines when a user is in "landing mode" based off their depth
+
+            short[] rawDepthData = new short[depthFrame.PixelDataLength];
+            depthFrame.CopyPixelDataTo(rawDepthData);
+
+            //Height * Width * 4 pixels
+            //(Blue, Red, Green, empty pixels per unit of height
+            Byte[] pixelies = new Byte[depthFrame.Height * depthFrame.Width * 4];
+
+            //ColorImagePoint[] colorPoint = new ColorImagePoint[depthFrame.PixelDataLength];
+            //this.kinect.MapDepthFrameToColorFrame(DepthImageFormat.Resolution640x480Fps30,
+            //            rawDepthData,
+            //            ColorImageFormat.RgbResolution640x480Fps30,
+            //            colorPoint);
+
+
+
+            //hardcoded locations to the various pixels
+            const int BlueIndex = 0;
+            const int GreenIndex = 1;
+            const int RedIndex = 2;
+            //const int Opacity = 3;
+
+            for (int depthIndex = 0, colorIndex = 0;
+                depthIndex < rawDepthData.Length && colorIndex < pixelies.Length;
+                depthIndex++, colorIndex += 4)
+            {
+                //get the player
+                int player = rawDepthData[depthIndex] & DepthImageFrame.PlayerIndexBitmask;
+
+                //get the depth value
+                int depth = rawDepthData[depthIndex] >> DepthImageFrame.PlayerIndexBitmaskWidth;
+
+                if (player != 0 && depth <= 3000)
+                {
+                    //Begin drawing landers on screen
+                    //If "land" command is spoken, AND a lander is matched to a runway, land the lander's plane on runway
+                    pixelies[colorIndex + GreenIndex] = 200;
+                    pixelies[colorIndex + BlueIndex] = 200;
+                    pixelies[colorIndex + RedIndex] = 200;
+                }
+
+                else if (player != 0 && depth > 3000)
+                {
+                    pixelies[colorIndex + GreenIndex] = 0;
+                    pixelies[colorIndex + BlueIndex] = 0;
+                    pixelies[colorIndex + RedIndex] = 0;
+                }
+
+                else
+                {
+
+                }
+
+            }//end loopy
+            return pixelies;
+        }//end enableLanding
+
+        public void checkForLanding(Runway mrunway)
+        {
+            double landerx = Canvas.GetLeft(rightLander) + (rightLander.Width/2);
+            double landery = Canvas.GetTop(rightLander) + (rightLander.Height/2);
+            if (!mrunway.occupied && airspaceIndex != -1)
+            {
+                if (landerx > mrunway.x
+                    && landerx < (mrunway.x + mrunway.width)
+                    && landery > mrunway.y
+                    && landery < (mrunway.y + mrunway.height))
+                {
+                    Land(mrunway);
+                    //rightLander.Fill = Brushes.AntiqueWhite;
+                    fillAirspace();
+                }
+            }
+
         }
+
+        public void Land(Runway landRunway) 
+        {
+            landRunway.occupied = true;
+            landRunway.mTimer = airspace[airspaceIndex].timer;
+            landRunway.redSign.Visibility = Visibility.Visible;
+            highlightPlaneTag(false);
+            airspace[airspaceIndex] = null;
+            airspaceIndex = -1;
+            capturedPlaneNumber.Content = "";
+            if (checkForGameOver())
+            {
+                //our happy victory dance
+                theBigSecret.Visibility = Visibility.Visible;
+                //show game over screen
+                blackBackgroundRectangle.Visibility = Visibility.Visible;
+            }
+        }
+
+        public bool checkForGameOver()
+        {
+            for(int i=0;i<airspace.Length; i++){
+                if(airspace[i] != null)
+                return false;
+            }
+            return true;
+        }
+
+        public void highlightPlaneTag(bool trueFalse)
+        {
+            if (trueFalse)
+            {
+                planeLabels[airspaceIndex].Background = Brushes.LimeGreen;
+            }
+            else
+            {
+                planeLabels[airspaceIndex].Background = Brushes.Transparent;
+            }
+        }
+
+
+
+        /**********************************************************************************/
+        /******************************* SKELETAL TRACKING ********************************/
+        /**********************************************************************************/
+
+        Skeleton GetFirstSkeleton(AllFramesReadyEventArgs e)
+        {
+            using (SkeletonFrame skeletonFrameData = e.OpenSkeletonFrame())
+            {
+                if (skeletonFrameData == null)
+                {
+                    return null;
+                }
+                skeletonFrameData.CopySkeletonDataTo(allSkeletons);
+
+                //get the first tracked skeleton
+                Skeleton first = (from s in allSkeletons
+                                  where s.TrackingState == SkeletonTrackingState.Tracked
+                                  select s).FirstOrDefault();
+                return first;
+
+            }
+        }//end GetFirstSkeleton
+
+        private void CameraPosition(FrameworkElement element, ColorImagePoint point)
+        {
+            //Divide by 2 for width and height so point is right in the middle 
+            // instead of in top/left corner
+            Canvas.SetLeft(element, point.X - element.Width / 2);//center image on the joint
+            Canvas.SetTop(element, point.Y - element.Height / 2);//center image on the joint
+
+        }//end CameraPosition
+
+        private void ScalePosition(FrameworkElement element, Joint joint)
+        {
+            //convert the value to X/Y
+            //Joint scaledJoint = joint.ScaleTo((int)canvas1.Width, (int)canvas1.Height); 
+            
+            //convert & scale (.3 = means 1/3 of joint distance)
+            Joint scaledJoint = joint.ScaleTo((int)canvas1.Width,(int) canvas1.Height, .2f, .2f);
+
+            Canvas.SetLeft(element, scaledJoint.Position.X);
+            Canvas.SetTop(element, scaledJoint.Position.Y);
+
+            Canvas.SetLeft(capturedPlaneNumber, (Canvas.GetLeft(rightLander) + (rightLander.Width / 2)) - (capturedPlaneNumber.Width / 2));
+            Canvas.SetTop(capturedPlaneNumber, (Canvas.GetTop(rightLander) + (rightLander.Height / 2)) - (capturedPlaneNumber.Height / 2));
+
+        }//end ScalePosition
+
+        void GetCameraPoint(Skeleton first, AllFramesReadyEventArgs e)
+        {
+            /*if (first == null)
+            {
+                return;
+            }*/
+
+            using (DepthImageFrame depth = e.OpenDepthImageFrame())
+            {
+                if (depth == null ||
+                    SensorChooser.Kinect == null)
+                {
+                    return;
+                }
+
+
+                //Map a joint location to a point on the depth map
+
+                //left hand
+                /*DepthImagePoint leftDepthPoint =
+                    depth.MapFromSkeletonPoint(first.Joints[JointType.HandLeft].Position);*/
+                //right hand
+                DepthImagePoint rightDepthPoint =
+                    depth.MapFromSkeletonPoint(first.Joints[JointType.HandRight].Position);
+
+
+                //Map a depth point to a point on the color image
+
+                //left hand
+                /*ColorImagePoint leftColorPoint =
+                    depth.MapToColorImagePoint(leftDepthPoint.X, leftDepthPoint.Y,
+                    ColorImageFormat.RgbResolution640x480Fps30);*/
+                //right hand
+                ColorImagePoint rightColorPoint =
+                    depth.MapToColorImagePoint(rightDepthPoint.X, rightDepthPoint.Y,
+                    ColorImageFormat.RgbResolution640x480Fps30);
+
+
+                CameraPosition(rightLander, rightColorPoint);
+               //******* ScalePosition(rightLander, first.Joints[JointType.HandRight]);
+
+            }
+
+        }//end GetCameraPoint
+
+
+
+        /**********************************************************************************/
+        /**************************** SPEECH RECOGNITION & SRE ****************************/
+        /**********************************************************************************/
 
         private SpeechRecognitionEngine CreateSpeechRecognizer()
         {
@@ -319,7 +604,7 @@ namespace KinectAudioDemo
             {
                 MessageBox.Show(
                     @"There was a problem initializing Speech Recognition.
-Ensure you have the Microsoft Speech SDK installed.",
+                    Ensure you have the Microsoft Speech SDK installed.",
                     "Failed to load Speech SDK",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -336,7 +621,7 @@ Ensure you have the Microsoft Speech SDK installed.",
             {
                 MessageBox.Show(
                     @"There was a problem initializing Speech Recognition.
-Ensure you have the Microsoft Speech SDK installed and configured.",
+                    Ensure you have the Microsoft Speech SDK installed and configured.",
                     "Failed to load Speech SDK",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -383,9 +668,10 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             grammar.Add("niner");
             grammar.Add("over");
             grammar.Add("delete");
-           // grammar.Add("elevation");
+            // grammar.Add("elevation");
             grammar.Add("Camera on");
             grammar.Add("Camera off");
+            grammar.Add("land");
 
             var gb = new GrammarBuilder { Culture = ri.Culture };
             gb.Append(grammar);
@@ -399,25 +685,25 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             sre.SpeechRecognitionRejected += this.SreSpeechRecognitionRejected;
 
             return sre;
-        }
+        }//end CreateSpeechRecognizer
 
         private void RejectSpeech(RecognitionResult result)
         {
             string status = "Rejected: " + (result == null ? string.Empty : result.Text + " " + result.Confidence);
             this.ReportSpeechStatus(status);
 
-         //   Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = blackBrush; }), DispatcherPriority.Normal);
-        }
+            //   Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = blackBrush; }), DispatcherPriority.Normal);
+        }//end RejectSpeech
 
         private void SreSpeechRecognitionRejected(object sender, SpeechRecognitionRejectedEventArgs e)
         {
             this.RejectSpeech(e.Result);
-        }
+        }//end SreSpeechRecognitionRejected
 
         private void SreSpeechHypothesized(object sender, SpeechHypothesizedEventArgs e)
         {
             this.ReportSpeechStatus("Hypothesized: " + e.Result.Text + " " + e.Result.Confidence);
-        }
+        }//end SreSpeechHypothesized
 
         private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
         {
@@ -433,147 +719,147 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             {
                 case "ALPHA":
                     //brush = this.redBrush;
-                    label1.Content = "A";
+                    currentCallSign.Content = "A";
                     break;
                 case "BRAVO":
                     brush = this.greenBrush;
-                    label1.Content = "B";
+                    currentCallSign.Content = "B";
                     break;
                 case "CHARLIE":
                     brush = this.blueBrush;
-                    label1.Content = "C";
+                    currentCallSign.Content = "C";
                     break;
                 case "DELTA":
                     brush = this.blueBrush;
-                    label1.Content = "D";
+                    currentCallSign.Content = "D";
                     break;
                 case "ECHO":
                     brush = this.blueBrush;
-                    label1.Content = "E";
+                    currentCallSign.Content = "E";
                     break;
                 case "FOXTROT":
                     brush = this.blueBrush;
-                    label1.Content = "F";
+                    currentCallSign.Content = "F";
                     break;
                 case "GOLF":
                     brush = this.blueBrush;
-                    label1.Content = "G";
+                    currentCallSign.Content = "G";
                     break;
                 case "HOTEL":
                     brush = this.blueBrush;
-                    label1.Content = "H";
+                    currentCallSign.Content = "H";
                     break;
                 case "INDIA":
                     brush = this.blueBrush;
-                    label1.Content = "I";
+                    currentCallSign.Content = "I";
                     break;
                 case "JULIET":
                     brush = this.blueBrush;
-                    label1.Content = "J";
+                    currentCallSign.Content = "J";
                     break;
                 case "KILO":
                     brush = this.blueBrush;
-                    label1.Content = "K";
+                    currentCallSign.Content = "K";
                     break;
                 case "LIMA":
                     brush = this.blueBrush;
-                    label1.Content = "L";
+                    currentCallSign.Content = "L";
                     break;
                 case "MIKE":
                     brush = this.blueBrush;
-                    label1.Content = "M";
+                    currentCallSign.Content = "M";
                     break;
                 case "NOVEMBER":
                     brush = this.blueBrush;
-                    label1.Content = "N";
+                    currentCallSign.Content = "N";
                     break;
                 case "OSCAR":
                     brush = this.blueBrush;
-                    label1.Content = "O";
+                    currentCallSign.Content = "O";
                     break;
                 case "PAPA":
                     brush = this.blueBrush;
-                    label1.Content = "P";
+                    currentCallSign.Content = "P";
                     break;
                 case "QUEBEC":
                     brush = this.blueBrush;
-                    label1.Content = "Q";
+                    currentCallSign.Content = "Q";
                     break;
                 case "ROMEO":
                     brush = this.blueBrush;
-                    label1.Content = "R";
+                    currentCallSign.Content = "R";
                     break;
                 case "SIERRA":
                     brush = this.blueBrush;
-                    label1.Content = "S";
+                    currentCallSign.Content = "S";
                     break;
                 case "TANGO":
                     brush = this.blueBrush;
-                    label1.Content = "T";
+                    currentCallSign.Content = "T";
                     break;
                 case "UNIFORM":
                     brush = this.blueBrush;
-                    label1.Content = "U";
+                    currentCallSign.Content = "U";
                     break;
                 case "VICTOR":
                     brush = this.blueBrush;
-                    label1.Content = "V";
+                    currentCallSign.Content = "V";
                     break;
                 case "WHISKEY":
                     brush = this.blueBrush;
-                    label1.Content = "W";
+                    currentCallSign.Content = "W";
                     break;
                 case "X RAY":
                     brush = this.blueBrush;
-                    label1.Content = "X";
+                    currentCallSign.Content = "X";
                     break;
                 case "YANKEE":
                     brush = this.blueBrush;
-                    label1.Content = "Y";
+                    currentCallSign.Content = "Y";
                     break;
                 case "ZULU":
                     brush = this.blueBrush;
-                    label1.Content = "Z";
+                    currentCallSign.Content = "Z";
                     break;
                 case "ZERO":
                     brush = this.blueBrush;
-                    label1.Content = "0";
+                    currentCallSign.Content = "0";
                     break;
                 case "ONE":
                     brush = this.blueBrush;
-                    label1.Content = "1";
+                    currentCallSign.Content = "1";
                     break;
                 case "TWO":
                     brush = this.blueBrush;
-                    label1.Content = "2";
+                    currentCallSign.Content = "2";
                     break;
                 case "THREE":
                     brush = this.blueBrush;
-                    label1.Content = "3";
+                    currentCallSign.Content = "3";
                     break;
                 case "FOUR":
                     brush = this.blueBrush;
-                    label1.Content = "4";
+                    currentCallSign.Content = "4";
                     break;
                 case "FIVE":
                     brush = this.blueBrush;
-                    label1.Content = "5";
+                    currentCallSign.Content = "5";
                     break;
                 case "SIX":
                     brush = this.blueBrush;
-                    label1.Content = "6";
+                    currentCallSign.Content = "6";
                     break;
                 case "SEVEN":
                     brush = this.blueBrush;
-                    label1.Content = "7";
+                    currentCallSign.Content = "7";
                     break;
                 case "EIGHT":
                     brush = this.blueBrush;
-                    label1.Content = "8";
+                    currentCallSign.Content = "8";
                     break;
                 case "NINER":
                     brush = this.blueBrush;
-                    label1.Content = "9";
+                    currentCallSign.Content = "9";
                     break;
                 case "OVER":
                     brush = this.blueBrush;
@@ -584,15 +870,21 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
                     //transmissionDone = false;
                     mistake = true;
                     //transmission.Remove(transmission.Length - 1);
-                    //label1.Content = transmission;
+                    //currentCallSign.Content = transmission;
                     break;
                 case "CAMERA ON":
-                    this.kinectColorViewer1.Visibility = System.Windows.Visibility.Visible;
+                    //this.kinectColorViewer1.Visibility = System.Windows.Visibility.Visible;
                     brush = this.blackBrush;
                     break;
                 case "CAMERA OFF":
-                    this.kinectColorViewer1.Visibility = System.Windows.Visibility.Hidden;
+                    //this.kinectColorViewer1.Visibility = System.Windows.Visibility.Hidden;
                     brush = this.blackBrush;
+                    break;
+                case "LAND":
+                         transmissionDone = true;
+                        checkForLanding(runway1);
+                        checkForLanding(runway2);
+                        checkForLanding(runway3);
                     break;
                 default:
                     brush = this.blackBrush;
@@ -603,22 +895,23 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
             this.ReportSpeechStatus(status);
             //hangarFull(2);
             transmissionEnd();
-            
-           // Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = brush; }), DispatcherPriority.Normal);
-        }
+
+            // Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = brush; }), DispatcherPriority.Normal);
+        }//end SreSpeechRecognized
+
         private void transmissionEnd()
         {
             //we haven't said 'OVER' yet, and we haven't done a mistake, so we just append the letter to our string
-            if (transmissionDone == false && mistake == false)
+            if (!transmissionDone && !mistake)
             {
                 //tailNum.Content = tempAirplane.getTailNum();
-                transmission += label1.Content.ToString();
-                label1.Content = transmission;
+                transmission += currentCallSign.Content.ToString();
+                currentCallSign.Content = transmission;
             }
-            else if (transmissionDone == false && mistake == true && transmission.Length > 0)
+            else if (!transmissionDone && mistake && transmission.Length > 0)
             {
-                transmission = mistakeCorrection((string)label1.Content);
-                label1.Content = transmission;
+                transmission = mistakeCorrection((string)currentCallSign.Content);
+                currentCallSign.Content = transmission;
                 mistake = false;
             }
             else
@@ -628,237 +921,19 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
                 checkAllPlanes();
                 lastUsed.Content = transmission; //set the current string you were building to the 'last used' label
                 transmission = ""; // null out the string you were building
-                label1.Content = ""; // null out the label of the string you were building
+                currentCallSign.Content = ""; // null out the label of the string you were building
                 //randomTailnum(); //generate a new random tailnumber
                 transmissionDone = false;
                 //hangarFull();
 
             }
-        }
+        }//end transmissionEnd
+
         private string mistakeCorrection(string errorString)
         {
             string correctedstring = errorString.Remove(errorString.Length - 1);
             return correctedstring;
         }//end mistakeCorrection
-
-        private string randomTailnum()
-        {
-            string tailnum = "N";
-            int remianingChars = rdm.Next(2);
-            int temp;
-            for (int i = 0; i <= remianingChars; i++)
-            {
-                temp = rdm.Next(35);
-                if (temp > 25)
-                {
-                    temp -= 25;
-                    tailnum += Convert.ToString(temp);
-                }
-                else
-                {
-                    tailnum += Convert.ToString((Char)(temp + 65));
-                }
-                tailnum = tailnum.ToUpper();
-            }
-            return tailnum;
-        }
-
-        private Stack<airplane> fillHangar(int total, int difficulty)
-        {
-            Stack <airplane> hangar = new Stack<airplane> ();
-            for (int i = 0; i < total; i++)
-            {
-                hangar.Push(new airplane(randomTailnum()));
-            }
-            return hangar;
-        }
-       
-        private void checkAllPlanes()
-        {
-            for (int i = 0; i < airspace.Length; i++)
-            {
-                if (transmission.Equals(airspace[i].getTailNum()))
-                {
-                    lastUsed.Background = Brushes.Green;
-                    airspace[i] = null;
-                    fillAirspace();
-                    return;
-                    //TODO: add score
-                }
-            }
-            lastUsed.Background = Brushes.Red;
-        }
-
-        //FILLS THE AIRSPACE FROM THE HANGAR
-        public void fillAirspace()
-        {
-            for (int i = 0; i < airspace.Length; i++)
-            {
-              if (airspace[i] == null)
-                {
-                    //TODO: add try/catch for pop statement (if cannot pop, do something)
-                    airspace[i] = hangar.Pop();
-                    planeLabels[i].Content = airspace[i].getTailNum();
-                }
- 
-            }
-        }//end fillAirspace
-
-
-        //ARRAY OF LABELS 
-        //pass in an array of labels, to be populated from our array of airplanes
-        public void planesToLabel(Label[] l, airplane[] a)
-        {
-            for (int i = 0; i < a.Length; i++)
-            {
-                l[i].Content = a[i].getTailNum();
-            }
-        }//end planesToLabel
-
-        public void initializeGame(){
-
-
-            //hangarFull(2);
-            //tempAirplane = hangar.;
-            //tailNum.Content = tempAirplane.getTailNum();
-        }//end initalizeGame
-
-
-        private void ReportSpeechStatus(string status)
-        {
-            Dispatcher.BeginInvoke(new Action(() => { tbSpeechStatus.Text = status; }), DispatcherPriority.Normal);
-        }
-
-       /* private void UpdateInstructionsText(string instructions)
-        {
-            Dispatcher.BeginInvoke(new Action(() => { tbColor.Text = instructions; }), DispatcherPriority.Normal);
-        }
-        */
-        private void Start()
-        {
-            var audioSource = this.kinect.AudioSource;
-            audioSource.BeamAngleMode = BeamAngleMode.Adaptive;
-            var kinectStream = audioSource.Start();
-            this.stream = new EnergyCalculatingPassThroughStream(kinectStream);
-            this.speechRecognizer.SetInputToAudioStream(
-                this.stream, new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
-            this.speechRecognizer.RecognizeAsync(RecognizeMode.Multiple);
-
-        }
-
-        private void EnableAecChecked(object sender, RoutedEventArgs e)
-        {
-            CheckBox enableAecCheckBox = (CheckBox)sender;
-            if (enableAecCheckBox.IsChecked != null)
-            {
-                this.kinect.AudioSource.EchoCancellationMode = enableAecCheckBox.IsChecked.Value
-                                                             ? EchoCancellationMode.CancellationAndSuppression
-                                                             : EchoCancellationMode.None;
-            }
-        }
-
-
-        public byte[] enableLanding(DepthImageFrame depthFrame, byte[] colorImage)
-        {
-            short[] rawDepthData = new short[depthFrame.PixelDataLength];
-            depthFrame.CopyPixelDataTo(rawDepthData);
-
-            //Height * Width * 4 pixels
-            //(Blue, Red, Green, empty pixels per unit of height
-            Byte[] pixelies = new Byte[depthFrame.Height * depthFrame.Width * 4];
-
-            //ColorImagePoint[] colorPoint = new ColorImagePoint[depthFrame.PixelDataLength];
-            //this.kinect.MapDepthFrameToColorFrame(DepthImageFormat.Resolution640x480Fps30,
-            //            rawDepthData,
-            //            ColorImageFormat.RgbResolution640x480Fps30,
-            //            colorPoint);
-
-            
-
-            //hardcoded locations to the various pixels
-            const int BlueIndex = 0;
-            const int GreenIndex = 1;
-            const int RedIndex = 2;
-            const int Opacity = 3;
-
-            for (int depthIndex = 0, colorIndex = 0;
-                depthIndex < rawDepthData.Length && colorIndex < pixelies.Length;
-                depthIndex++, colorIndex += 4)
-            {
-                //get the player
-                int player = rawDepthData[depthIndex] & DepthImageFrame.PlayerIndexBitmask;
-
-                //get the depth value
-                int depth = rawDepthData[depthIndex] >> DepthImageFrame.PlayerIndexBitmaskWidth;
-
-                if (player != 0 && depth <= 3000)
-                {
-                    //Begin drawing landers on screen
-                    //If "land" command is spoken, AND a lander is matched to a runway, land the lander's plane on runway
-                    pixelies[colorIndex + GreenIndex] = 200;
-                    pixelies[colorIndex + BlueIndex] = 200;
-                    pixelies[colorIndex + RedIndex] = 200;
-                }
-
-                else if (player!= 0 && depth >3000)
-                {
-                    pixelies[colorIndex + GreenIndex] = 0;
-                    pixelies[colorIndex + BlueIndex] = 0;
-                    pixelies[colorIndex + RedIndex] = 0;
-                }
-
-                else 
-                {
-
-                }
-
-            }//end loopy
-            return pixelies;
-        }
-
-        Skeleton GetFirstSkeleton(AllFramesReadyEventArgs e)
-        {
-            using (SkeletonFrame skeletonFrameData = e.OpenSkeletonFrame())
-            {
-                if (skeletonFrameData == null)
-                {
-                    return null;
-                }
-
-
-                skeletonFrameData.CopySkeletonDataTo(allSkeletons);
-
-                //get the first tracked skeleton
-                Skeleton first = (from s in allSkeletons
-                                  where s.TrackingState == SkeletonTrackingState.Tracked
-                                  select s).FirstOrDefault();
-
-                return first;
-
-            }
-        }
-
-        private void CameraPosition(FrameworkElement element, ColorImagePoint point)
-        {
-            //Divide by 2 for width and height so point is right in the middle 
-            // instead of in top/left corner
-            Canvas.SetLeft(element, point.X - element.Width / 2);//center image on the joint
-            Canvas.SetTop(element, point.Y - element.Height / 2);//center image on the joint
-
-        }
-
-        private void ScalePosition(FrameworkElement element, Joint joint)
-        {
-            //convert the value to X/Y
-            //Joint scaledJoint = joint.ScaleTo(1280, 720); 
-
-            //convert & scale (.3 = means 1/3 of joint distance)
-            Joint scaledJoint = joint.ScaleTo(1280, 720, .3f, .3f);
-            joint.
-            Canvas.SetLeft(element, scaledJoint.Position.X);
-            Canvas.SetTop(element, scaledJoint.Position.Y);
-
-        }
 
         private class EnergyCalculatingPassThroughStream : Stream
         {
@@ -981,12 +1056,43 @@ Ensure you have the Microsoft Speech SDK installed and configured.",
                 this.baseStream.Write(buffer, offset, count);
             }
 
-            
 
-            
+
+
+        }//end EnergyCalculatingPassThroughStream
+
+        private void EnableAecChecked(object sender, RoutedEventArgs e)
+        {
+            CheckBox enableAecCheckBox = (CheckBox)sender;
+            if (enableAecCheckBox.IsChecked != null)
+            {
+                this.kinect.AudioSource.EchoCancellationMode = enableAecCheckBox.IsChecked.Value
+                                                             ? EchoCancellationMode.CancellationAndSuppression
+                                                             : EchoCancellationMode.None;
+            }
+        }//end EnableAecChecked
+
+        private void ReportSpeechStatus(string status)
+        {
+            Dispatcher.BeginInvoke(new Action(() => { tbSpeechStatus.Text = status; }), DispatcherPriority.Normal);
+        }//end ReportSpeechStatus
+
+        private static RecognizerInfo GetKinectRecognizer()
+        {
+            Func<RecognizerInfo, bool> matchingFunc = r =>
+            {
+                string value;
+                r.AdditionalInfo.TryGetValue("Kinect", out value);
+                return "True".Equals(value, StringComparison.InvariantCultureIgnoreCase) && "en-US".Equals(r.Culture.Name, StringComparison.InvariantCultureIgnoreCase);
+            };
+            return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
         }
 
-    
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
+
 
 
     }//end MainWindow:Window

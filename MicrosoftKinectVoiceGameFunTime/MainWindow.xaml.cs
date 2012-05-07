@@ -58,6 +58,7 @@ namespace KinectAudioDemo
         private Stack<airplane> hangar = new Stack<airplane>();
         //private airplane tempAirplane;
         private bool mistake = false;
+        public bool done = false;
         //int activeAirplanePosition = 0;
         //Skeleton Stuff
         //bool closing = false;
@@ -68,9 +69,11 @@ namespace KinectAudioDemo
         int difficulty = 0;
         int totalPlanesInAir = 3;
         Label[] planeLabels;
-        System.Windows.Shapes.Ellipse[] ellipseAry;
         airplane [] airspace;
         int airspaceIndex = 0;
+        int score = 0;
+        bool gameState = false;
+
         
         //Runway objects
         Runway runway1;
@@ -88,59 +91,70 @@ namespace KinectAudioDemo
 
         void sensor_AllFramesReady(object sender, AllFramesReadyEventArgs e)
         {
-
-            runway1.checkTime();
-            runway2.checkTime();
-            runway3.checkTime();
-            for (int i = 0; i < airspace.Length; i++)
+            if (!gameState)
             {
-                airspace[i].consumeFuel();
-            }
-
-            //throw new NotImplementedException();
-            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
-            {
-                using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
+                runway1.checkTime();
+                runway2.checkTime();
+                runway3.checkTime();
+                for (int i = 0; i < airspace.Length; i++)
                 {
-                    if (depthFrame == null || colorFrame == null)
+                    if (airspace[i] != null && airspace[i].timer > 0)
                     {
-                        return;
+                        airspace[i].consumeFuel();
+                    }
+                    else if (airspace[i] != null)
+                    {
+                        if (airspaceIndex == i) 
+                        {
+                            capturedPlaneNumber.Content = "";
+                            highlightPlaneTag(false);
+                            airspaceIndex = -1;
+                        }
+                        score -= 500;
+                        scoreNum.Content = score;
+                        airspace[i] = null;
+                        planeLabels[i].Content = "";
+                        fillAirspace();
+                        checkForGameOver();
                     }
 
-                    byte[] pixels = new byte[colorFrame.PixelDataLength];//original thingy
+                }
 
-                    //***copy data out into our byte array***
-                    colorFrame.CopyPixelDataTo(pixels);
-
-
-                    byte[] depthPixels = enableLanding(depthFrame, pixels);//after messing with depthdata
-                    byte[] pixels2 = new byte[pixels.Length];//pixels after modifying the color image
-
-
-
-                    int stride = colorFrame.Width * 4; //because RGB + alpha
-
-                    BackdropImage.Source = BitmapSource.Create(colorFrame.Width, colorFrame.Height, 96, 96,
-                    PixelFormats.Bgr32, null, depthPixels, stride);
-                    ColorCameraImage.Source = BitmapSource.Create(colorFrame.Width, colorFrame.Height, 96, 96,
-                    PixelFormats.Bgr32, null, pixels, stride);
-
-                    // BitmapSource.Create();
-                }//end depth frame
-            }//end color frame
-
-            Skeleton first = GetFirstSkeleton(e);
-            if (first == null)
-            {
-                return;
+                
             }
+            using (ColorImageFrame colorFrame = e.OpenColorImageFrame())
+                {
+                    using (DepthImageFrame depthFrame = e.OpenDepthImageFrame())
+                    {
+                        if (depthFrame == null || colorFrame == null)
+                        {
+                            return;
+                        }
 
-            ScalePosition(rightLander, first.Joints[JointType.HandRight]);
-            //GetCameraPoint(first, e);
+                        byte[] pixels = new byte[colorFrame.PixelDataLength];//original thingy
+                        //***copy data out into our byte array***
+                        colorFrame.CopyPixelDataTo(pixels);
+                        // byte[] depthPixels = pauseGame(depthFrame, pixels);//after messing with depthdata
+                        pauseGame(depthFrame, pixels);
+                        //byte[] pixels2 = new byte[pixels.Length];//pixels after modifying the color image
+                        int stride = colorFrame.Width * 4; //because RGB + alpha
+                        //BackdropImage.Source = BitmapSource.Create(colorFrame.Width, colorFrame.Height, 96, 96,
+                        //PixelFormats.Bgr32, null, depthPixels, stride);
+                        ColorCameraImage.Source = BitmapSource.Create(colorFrame.Width, colorFrame.Height, 96, 96,
+                        PixelFormats.Bgr32, null, pixels, stride);
+
+                        // BitmapSource.Create();
+                    }//end depth frame
+                }//end color frame
+                Skeleton first = GetFirstSkeleton(e);
+                if (first == null)
+                {
+                    return;
+                }
+                ScalePosition(rightLander, first.Joints[JointType.HandRight]);
+                //GetCameraPoint(first, e);
+        
             
-
-
-
         }//end allFramesReady
 
         private void InitializeKinect()
@@ -195,7 +209,8 @@ namespace KinectAudioDemo
             ProgressBar[] mfuelTankArray = {fuelTank1, fuelTank2, fuelTank3};
             fuelTankArray = mfuelTankArray;
             //We fill the hangar with the initial amount of planes.  This is the total number of planes in the game
-            hangar = fillHangar(totalPlanesInAir * 3, difficulty);
+            //derp
+            hangar = fillHangar(totalPlanesInAir + 1, difficulty);
 
             //Now we fill airspace, it is the array of airplanes currently in the air
             airspace = new airplane[totalPlanesInAir];
@@ -307,20 +322,23 @@ namespace KinectAudioDemo
             of an airplane in the global variable airspace*/
             for (int i = 0; i < airspace.Length; i++)
             {
-                if (transmission.Equals(airspace[i].getTailNum()))
+                if (airspace[i] != null) 
                 {
-                    capturedPlaneNumber.Content = airspace[i].getTailNum();
-                    lastUsed.Background = Brushes.Green;
-                    //airspace[i] = null;
-                    fillAirspace();
-                    if (airspaceIndex != -1)
+                    if (transmission.Equals(airspace[i].getTailNum()))
                     {
-                        highlightPlaneTag(false);
+                        capturedPlaneNumber.Content = airspace[i].getTailNum();
+                        lastUsed.Background = Brushes.Green;
+                        //airspace[i] = null;
+                        fillAirspace();
+                        if (airspaceIndex != -1)
+                        {
+                            highlightPlaneTag(false);
+                        }
+                        airspaceIndex = i;
+                        highlightPlaneTag(true);
+                        return;
+                        //TODO: add score
                     }
-                    airspaceIndex = i;
-                    highlightPlaneTag(true);
-                    return;
-                    //TODO: add score
                 }
             }
             lastUsed.Background = Brushes.Red;
@@ -331,17 +349,19 @@ namespace KinectAudioDemo
         {
         /*fillAirspace populates each element of airspace if it is null
         airspace is global, and therefore does not need to be passed*/
-            if (hangar.Count != 0)
+            for (int i = 0; i < airspace.Length; i++)
             {
-                for (int i = 0; i < airspace.Length; i++)
+                if (airspace[i] == null && hangar.Count != 0)
                 {
-                    if (airspace[i] == null)
-                    {
-                        //TODO: add try/catch for pop statement (if cannot pop, do something)
-                        airspace[i] = hangar.Pop();
-                        airspace[i].fuel = fuelTankArray[i];
-                        planeLabels[i].Content = airspace[i].getTailNum();
-                    }
+                    //TODO: add try/catch for pop statement (if cannot pop, do something)
+                    airspace[i] = hangar.Pop();
+                    airspace[i].fuel = fuelTankArray[i];
+                    planeLabels[i].Content = airspace[i].getTailNum();
+                }
+                else if (airspace[i] == null && hangar.Count == 0)
+                {
+                    fuelTankArray[i].Value = 0;
+                    fuelTankArray[i].Visibility = Visibility.Hidden;
                 }
             }
         }//end fillAirspace
@@ -378,65 +398,7 @@ namespace KinectAudioDemo
             return tailnum;
         }//end randomTailnum
 
-        public byte[] enableLanding(DepthImageFrame depthFrame, byte[] colorImage)
-        {
-            //enableLanding is a method that determines when a user is in "landing mode" based off their depth
-
-            short[] rawDepthData = new short[depthFrame.PixelDataLength];
-            depthFrame.CopyPixelDataTo(rawDepthData);
-
-            //Height * Width * 4 pixels
-            //(Blue, Red, Green, empty pixels per unit of height
-            Byte[] pixelies = new Byte[depthFrame.Height * depthFrame.Width * 4];
-
-            //ColorImagePoint[] colorPoint = new ColorImagePoint[depthFrame.PixelDataLength];
-            //this.kinect.MapDepthFrameToColorFrame(DepthImageFormat.Resolution640x480Fps30,
-            //            rawDepthData,
-            //            ColorImageFormat.RgbResolution640x480Fps30,
-            //            colorPoint);
-
-
-
-            //hardcoded locations to the various pixels
-            const int BlueIndex = 0;
-            const int GreenIndex = 1;
-            const int RedIndex = 2;
-            //const int Opacity = 3;
-
-            for (int depthIndex = 0, colorIndex = 0;
-                depthIndex < rawDepthData.Length && colorIndex < pixelies.Length;
-                depthIndex++, colorIndex += 4)
-            {
-                //get the player
-                int player = rawDepthData[depthIndex] & DepthImageFrame.PlayerIndexBitmask;
-
-                //get the depth value
-                int depth = rawDepthData[depthIndex] >> DepthImageFrame.PlayerIndexBitmaskWidth;
-
-                if (player != 0 && depth <= 3000)
-                {
-                    //Begin drawing landers on screen
-                    //If "land" command is spoken, AND a lander is matched to a runway, land the lander's plane on runway
-                    pixelies[colorIndex + GreenIndex] = 200;
-                    pixelies[colorIndex + BlueIndex] = 200;
-                    pixelies[colorIndex + RedIndex] = 200;
-                }
-
-                else if (player != 0 && depth > 3000)
-                {
-                    pixelies[colorIndex + GreenIndex] = 0;
-                    pixelies[colorIndex + BlueIndex] = 0;
-                    pixelies[colorIndex + RedIndex] = 0;
-                }
-
-                else
-                {
-
-                }
-
-            }//end loopy
-            return pixelies;
-        }//end enableLanding
+        
 
         public void checkForLanding(Runway mrunway)
         {
@@ -460,28 +422,34 @@ namespace KinectAudioDemo
         public void Land(Runway landRunway) 
         {
             landRunway.occupied = true;
-            landRunway.mTimer = airspace[airspaceIndex].timer;
+            landRunway.updateTimer(airspace[airspaceIndex].timer);
             landRunway.redSign.Visibility = Visibility.Visible;
             highlightPlaneTag(false);
+            score += (int)airspace[airspaceIndex].fuel.Value;
+            scoreNum.Content = score;
+            planeLabels[airspaceIndex].Content = "";
             airspace[airspaceIndex] = null;
             airspaceIndex = -1;
             capturedPlaneNumber.Content = "";
-            if (checkForGameOver())
-            {
-                //our happy victory dance
-                theBigSecret.Visibility = Visibility.Visible;
-                //show game over screen
-                blackBackgroundRectangle.Visibility = Visibility.Visible;
-            }
+            checkForGameOver();
         }
 
-        public bool checkForGameOver()
+        public void checkForGameOver()
         {
             for(int i=0;i<airspace.Length; i++){
                 if(airspace[i] != null)
-                return false;
+                return;
             }
-            return true;
+            //our happy victory dance
+            theBigSecret.Visibility = Visibility.Visible;
+            //show game over screen
+            blackBackgroundRectangle.Visibility = Visibility.Visible;
+            label2.Visibility = Visibility.Visible;
+            done = true;
+            pausedLabel.Visibility = Visibility.Hidden;
+            scoreLabel.Foreground = Brushes.White;
+            scoreNum.Foreground = Brushes.White;
+            
         }
 
         public void highlightPlaneTag(bool trueFalse)
@@ -590,6 +558,51 @@ namespace KinectAudioDemo
             }
 
         }//end GetCameraPoint
+
+
+
+        /**********************************************************************************/
+        /********************************** DEPTH CAMERA **********************************/
+        /**********************************************************************************/
+        
+        public void pauseGame(DepthImageFrame depthFrame, byte[] colorImage)
+        {
+            short[] rawDepthData = new short[depthFrame.PixelDataLength];
+            depthFrame.CopyPixelDataTo(rawDepthData);
+
+            bool playerReady = false;
+
+            for (int depthIndex = 0; depthIndex < rawDepthData.Length; depthIndex++)
+            {
+                //get the player
+                int player = rawDepthData[depthIndex] & DepthImageFrame.PlayerIndexBitmask;
+
+                //get the depth value
+                int depth = rawDepthData[depthIndex] >> DepthImageFrame.PlayerIndexBitmaskWidth;
+
+                if (player != 0 && depth <= 1500 && !done)
+                {
+                    //this is unpause
+                    playerReady = true;
+                }
+               
+            }//end loopy
+           if (playerReady)
+           {
+                 //this is unpause
+                 gameState = false;
+                 blackBackgroundRectangle.Visibility = Visibility.Hidden;
+                 pausedLabel.Visibility = Visibility.Hidden;
+           }
+           else if(!done)
+           {
+               //pause
+                gameState = true;
+                blackBackgroundRectangle.Visibility = Visibility.Visible;
+                pausedLabel.Visibility = Visibility.Visible;
+           }
+        }//end enableLanding
+
 
 
 
@@ -707,9 +720,9 @@ namespace KinectAudioDemo
 
         private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
         {
-            SolidColorBrush brush;
+           
 
-            if (e.Result.Confidence < 0.5)
+            if (e.Result.Confidence < 0.4)
             {
                 this.RejectSpeech(e.Result);
                 return;
@@ -717,186 +730,143 @@ namespace KinectAudioDemo
 
             switch (e.Result.Text.ToUpperInvariant())
             {
-                case "ALPHA":
-                    //brush = this.redBrush;
+                case "ALPHA":                
                     currentCallSign.Content = "A";
                     break;
-                case "BRAVO":
-                    brush = this.greenBrush;
+                case "BRAVO":                   
                     currentCallSign.Content = "B";
                     break;
                 case "CHARLIE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "C";
                     break;
                 case "DELTA":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "D";
                     break;
                 case "ECHO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "E";
                     break;
                 case "FOXTROT":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "F";
                     break;
                 case "GOLF":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "G";
                     break;
                 case "HOTEL":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "H";
                     break;
                 case "INDIA":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "I";
                     break;
                 case "JULIET":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "J";
                     break;
                 case "KILO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "K";
                     break;
                 case "LIMA":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "L";
                     break;
                 case "MIKE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "M";
                     break;
                 case "NOVEMBER":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "N";
                     break;
                 case "OSCAR":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "O";
                     break;
                 case "PAPA":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "P";
                     break;
                 case "QUEBEC":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "Q";
                     break;
                 case "ROMEO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "R";
                     break;
                 case "SIERRA":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "S";
                     break;
                 case "TANGO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "T";
                     break;
                 case "UNIFORM":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "U";
                     break;
                 case "VICTOR":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "V";
                     break;
                 case "WHISKEY":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "W";
                     break;
                 case "X RAY":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "X";
                     break;
                 case "YANKEE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "Y";
                     break;
                 case "ZULU":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "Z";
                     break;
                 case "ZERO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "0";
                     break;
                 case "ONE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "1";
                     break;
                 case "TWO":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "2";
                     break;
                 case "THREE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "3";
                     break;
                 case "FOUR":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "4";
                     break;
                 case "FIVE":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "5";
                     break;
                 case "SIX":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "6";
                     break;
                 case "SEVEN":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "7";
                     break;
                 case "EIGHT":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "8";
                     break;
                 case "NINER":
-                    brush = this.blueBrush;
                     currentCallSign.Content = "9";
                     break;
                 case "OVER":
-                    brush = this.blueBrush;
                     transmissionDone = true;
                     break;
                 case "DELETE":
-                    brush = this.blueBrush;
-                    //transmissionDone = false;
                     mistake = true;
-                    //transmission.Remove(transmission.Length - 1);
-                    //currentCallSign.Content = transmission;
                     break;
                 case "CAMERA ON":
                     //this.kinectColorViewer1.Visibility = System.Windows.Visibility.Visible;
-                    brush = this.blackBrush;
                     break;
                 case "CAMERA OFF":
                     //this.kinectColorViewer1.Visibility = System.Windows.Visibility.Hidden;
-                    brush = this.blackBrush;
                     break;
                 case "LAND":
-                         transmissionDone = true;
+                    currentCallSign.Content = "";
+                    if (airspaceIndex != -1)
+                    {
                         checkForLanding(runway1);
                         checkForLanding(runway2);
                         checkForLanding(runway3);
+                    }
                     break;
                 default:
-                    brush = this.blackBrush;
                     break;
             }
 
             string status = "Recognized: " + e.Result.Text + " " + e.Result.Confidence;
             this.ReportSpeechStatus(status);
-            //hangarFull(2);
             transmissionEnd();
 
-            // Dispatcher.BeginInvoke(new Action(() => { tbColor.Background = brush; }), DispatcherPriority.Normal);
         }//end SreSpeechRecognized
 
         private void transmissionEnd()
@@ -917,14 +887,11 @@ namespace KinectAudioDemo
             else
             {
                 mistake = false;
-                //checkPlayerAccuracy(transmission); // check to see if you were right
                 checkAllPlanes();
                 lastUsed.Content = transmission; //set the current string you were building to the 'last used' label
                 transmission = ""; // null out the string you were building
                 currentCallSign.Content = ""; // null out the label of the string you were building
-                //randomTailnum(); //generate a new random tailnumber
                 transmissionDone = false;
-                //hangarFull();
 
             }
         }//end transmissionEnd

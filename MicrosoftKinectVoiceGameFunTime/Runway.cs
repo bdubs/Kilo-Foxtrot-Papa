@@ -27,7 +27,7 @@ namespace MicrosoftKinectVoiceGameFunTime
         public bool occupied;
         public int ID;
         public System.Windows.Shapes.Ellipse redSign;
-        public int mTimer;
+        private int mTimer;
 
         public Runway(double mx, double my, double mwidth, double mheight, int id, System.Windows.Shapes.Ellipse ellipse)
         {
@@ -53,6 +53,11 @@ namespace MicrosoftKinectVoiceGameFunTime
                 redSign.Visibility = Visibility.Hidden;
                 occupied = false;
             }
+        }
+
+        public void updateTimer(int planeTimer)
+        {
+            mTimer = planeTimer;
         }
     }
 }

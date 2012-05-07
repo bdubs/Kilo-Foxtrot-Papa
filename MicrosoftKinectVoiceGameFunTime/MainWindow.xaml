@@ -46,5 +46,9 @@
         <ProgressBar Canvas.Left="16" Canvas.Top="234" Height="19" Name="fuelTank3" Width="140" Value="100" Maximum="1800" />
         <Rectangle Width="800" Height="600" Name="blackBackgroundRectangle" Fill="Black" Visibility="Hidden"/>
         <Image Width="500" Height="300" Name="theBigSecret" Source="poptart1red1.gif" Canvas.Left="153" Canvas.Top="165" Visibility="Hidden"/>
+        <Label Canvas.Left="659" Canvas.Top="166" Content="0" Height="37" Name="scoreNum" FontSize="18" Width="177" />
+        <Label Canvas.Left="600" Canvas.Top="165" Content="Score:" FontSize="18" Height="37" Name="scoreLabel" Width="61" />
+        <Label Canvas.Left="306" Canvas.Top="105" Content="Gamer Over" Height="66" Name="label2" Width="201" Foreground="Red" FontSize="36" FontFamily="Game Over" Visibility="Hidden"/>
+        <Label Canvas.Left="344" Canvas.Top="106" Content="Paused" FontSize="36" Foreground="Red" Height="66" Name="pausedLabel" Visibility="Hidden" Width="201"/>
     </Canvas>
 </Window>
